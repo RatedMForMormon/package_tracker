@@ -90,7 +90,7 @@ stop() -> gen_server:call(?MODULE, stop).
 %%--------------------------------------------------------------------
 -spec init(term()) -> {ok, term()}|{ok, term(), number()}|ignore |{stop, term()}.
 init([]) ->
-	case riakc_pb_socket:start_link("riak.ratedmstudios.com", 8087) of
+	case riakc_pb_socket:start_link("dev.cvm-labs.com", 8087) of
 		{ok, Riak_pid} -> {ok, Riak_pid};
 		_ -> {stop, link_failure}
 	end.
