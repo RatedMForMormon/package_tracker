@@ -25,7 +25,7 @@
 
 %% for testing purposes
 
--export([store_package_info/2, query_package_info/2]).
+-export([store_package_info/2, query_package_history/2, store_vehicle_info/2, query_vehicle_history/2, store_facility_info/2, query_facility/2]).
 -record(location, {lat=0.0, lon=0.0}).
 -record(package, {package_id="", holder_id="", timestamp=0}).
 -record(vehicle, {vehicle_id="", location=#location{lat=0.0, lon=0.0}, timestamp=0}).
@@ -109,30 +109,41 @@ init([]) ->
                                   {noreply, term(), integer()} |
                                   {stop, term(), term(), integer()} | 
                                   {stop, term(), term()}.
+                        
+% Store info functions
 handle_call({store_package_info, {Package_id, Holder_id, Timestamp}}, _From, Riak_pid) ->
     case riakc_pb_socket:get(Riak_pid, <<"packages">>, term_to_binary(Package_id)) of
-	{ok, Old_info} -> Request=riakc_obj:new(<<"packages">>, term_to_binary(Package_id), term_to_binary([{Holder_id, Timestamp}] ++ binary_to_term(riakc_obj:get_value(Old_info))));
-	_ -> Request=riakc_obj:new(<<"packages">>, term_to_binary(Package_id), term_to_binary([{Holder_id, Timestamp}]))
+        {ok, Old_info} -> 
+            Request=riakc_obj:new(<<"packages">>, term_to_binary(Package_id), term_to_binary([{Holder_id, Timestamp}] ++ binary_to_term(riakc_obj:get_value(Old_info))));
+        _ -> 
+            Request=riakc_obj:new(<<"packages">>, term_to_binary(Package_id), term_to_binary([{Holder_id, Timestamp}]))
     end,
     {reply, riakc_pb_socket:put(Riak_pid, Request), Riak_pid};
 
-handle_call({store_vehicle_info, #vehicle{vehicle_id=Vehicle_id, location=#location{lat=Lat, lon= Lon}, timestamp=Timestamp}}, _From, Riak_pid) ->
-    Request=riakc_obj:new(<<"vehicles">>, Vehicle_id, {Lat, Lon, Timestamp}),
+handle_call({store_vehicle_info, {Vehicle_id, {Lat, Long}, Timestamp}}, _From, Riak_pid) ->
+    case riakc_pb_socket:get(Riak_pid, <<"vehicles">>, term_to_binary(Vehicle_id)) of
+        {ok, Old_info} -> 
+            Request = riakc_obj:new(<<"vehicles">>, term_to_binary(Vehicle_id), term_to_binary([{{Lat, Long}, Timestamp}] ++ binary_to_term(riak_obj:get_value(Old_info))));
+        _ ->
+            Request = riak_obj:new(<<"vehicles">>, term_to_binary(Vehicle_id), term_to_binary([{{Lat, Long}, Timestamp}]))
+    end,
     {reply, riakc_pb_socket:put(Riak_pid, Request), Riak_pid};
 
-handle_call({store_facility, #facility{facility_id=Facility_id, city=City}}, _From, Riak_pid) ->
-    Request=riakc_obj:new(<<"facilities">>, Facility_id, City),
+handle_call({store_facility_info, {Facility_id, City}}, _From, Riak_pid) ->    
+    Request = riakc_obj:new(<<"facilities">>, term_to_binary(Facility_id), term_to_binary(City)),
     {reply, riakc_pb_socket:put(Riak_pid, Request), Riak_pid};
 
-handle_call({query_package_info, Package_id}, _from, Riak_pid) ->
+% Get info functions
+handle_call({query_package_history, Package_id}, _from, Riak_pid) ->
     {reply, riakc_pb_socket:get(Riak_pid, <<"packages">>, term_to_binary(Package_id)), Riak_pid};
 
-handle_call({query_package_info, Vehicle_id}, _from, Riak_pid) ->
-    {reply, riakc_pb_socket:get(Riak_pid, <<"vehicles">>, Vehicle_id), Riak_pid};
+handle_call({query_package_history, Vehicle_id}, _from, Riak_pid) ->
+    {reply, riakc_pb_socket:get(Riak_pid, <<"vehicles">>, term_to_binary(Vehicle_id)), Riak_pid};
 
-handle_call({query_package_info, Facility_id}, _from, Riak_pid) ->
-    {reply, riakc_pb_socket:get(Riak_pid, <<"facilities">>, Facility_id), Riak_pid};
+handle_call({query_facility, Facility_id}, _from, Riak_pid) ->
+    {reply, riakc_pb_socket:get(Riak_pid, <<"facilities">>, term_to_binary(Facility_id)), Riak_pid};
 
+% Shutdown server
 handle_call(stop, _From, _State) ->
         {stop,normal,
                 replace_stopped,
@@ -193,13 +204,26 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 
 
+% Package functions
 store_package_info(Registered_name, Decoded_object) ->
-%   io:fwrite("Hello, World!~n"),
     gen_server:call(Registered_name, {store_package_info, Decoded_object}).
 
-query_package_info(Registered_name, Package_id) ->
-    gen_server:call(Registered_name, {query_package_info, Package_id}).
+query_package_history(Registered_name, Package_id) ->
+    gen_server:call(Registered_name, {query_package_history, Package_id}).
 
+% Vehicle functions
+store_vehicle_info(Registered_name, Decoded_object) ->
+    gen_server:call(Registered_name, {store_vehicle_info, Decoded_object}).
+
+query_vehicle_history(Registered_name, Vehicle_id) ->
+    gen_server:call(Registered_name, {query_vehicle_history, Vehicle_id}).
+
+% Facility functions
+store_facility_info(Registered_name, Decoded_object) ->
+    gen_server:call(Registered_name, {store_facility_info, Decoded_object}).
+
+query_facility(Registered_name, Facility_id) ->
+    gen_server:call(Registered_name, {query_facility, Facility_id}). 
 % cases for no information
 % bad ids
 % bad timestamp
