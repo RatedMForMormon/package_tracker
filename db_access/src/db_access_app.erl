@@ -14,7 +14,9 @@ start(_Type, _Args) ->
 		{'_', [
 		    {"/", toppage_h, []},
 		    {"/store_package_info", store_package_info, []},
-		    {"/query_package_history", query_package_history, []}
+		    {"/query_package_history", query_package_history, []},
+			{"/store_vehicle_info", store_vehicle_info, []},
+			{"/query_vehicle_history", query_vehicle_history, []}
 		]}
 	]),
 	PrivDir = code:priv_dir(db_access),
