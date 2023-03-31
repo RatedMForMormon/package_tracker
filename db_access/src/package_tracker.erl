@@ -114,9 +114,9 @@ init([]) ->
 handle_call({store_package_info, {Package_id, Holder_id, Timestamp}}, _From, Riak_pid) ->
     case riakc_pb_socket:get(Riak_pid, <<"packages">>, term_to_binary(Package_id)) of
         {ok, Old_info} -> 
-            Request=riakc_obj:new(<<"packages">>, term_to_binary(Package_id), term_to_binary([{Holder_id, Timestamp}] ++ binary_to_term(riakc_obj:get_value(Old_info))));
+            Request=riakc_obj:new(<<"packages">>, term_to_binary(Package_id), term_to_binary([#{holder_id => Holder_id, timestamp => Timestamp}] ++ binary_to_term(riakc_obj:get_value(Old_info))));
         _ -> 
-            Request=riakc_obj:new(<<"packages">>, term_to_binary(Package_id), term_to_binary([{Holder_id, Timestamp}]))
+            Request=riakc_obj:new(<<"packages">>, term_to_binary(Package_id), term_to_binary([#{holder_id => Holder_id, timestamp => Timestamp}]))
     end,
     {reply, riakc_pb_socket:put(Riak_pid, Request), Riak_pid};
 
