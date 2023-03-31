@@ -90,7 +90,7 @@ stop() -> gen_server:call(?MODULE, stop).
 %%--------------------------------------------------------------------
 -spec init(term()) -> {ok, term()}|{ok, term(), number()}|ignore |{stop, term()}.
 init([]) ->
-	case riakc_pb_socket:start_link("riak.ratedmstudios.com", 8087) of
+	case riakc_pb_socket:start_link("dev.cvm-labs.com", 8087) of
 		{ok, Riak_pid} -> {ok, Riak_pid};
 		_ -> {stop, link_failure}
 	end.
@@ -114,30 +114,30 @@ init([]) ->
 handle_call({store_package_info, {Package_id, Holder_id, Timestamp}}, _From, Riak_pid) ->
     case riakc_pb_socket:get(Riak_pid, <<"packages">>, term_to_binary(Package_id)) of
         {ok, Old_info} -> 
-            Request=riakc_obj:new(<<"packages">>, term_to_binary(Package_id), term_to_binary([{Holder_id, Timestamp}] ++ binary_to_term(riakc_obj:get_value(Old_info))));
+            Request=riakc_obj:new(<<"packages">>, term_to_binary(Package_id), term_to_binary([#{holder_id => Holder_id, timestamp => Timestamp}] ++ binary_to_term(riakc_obj:get_value(Old_info))));
         _ -> 
-            Request=riakc_obj:new(<<"packages">>, term_to_binary(Package_id), term_to_binary([{Holder_id, Timestamp}]))
+            Request=riakc_obj:new(<<"packages">>, term_to_binary(Package_id), term_to_binary([#{holder_id => Holder_id, timestamp => Timestamp}]))
     end,
     {reply, riakc_pb_socket:put(Riak_pid, Request), Riak_pid};
 
 handle_call({store_vehicle_info, {Vehicle_id, {Lat, Long}, Timestamp}}, _From, Riak_pid) ->
     case riakc_pb_socket:get(Riak_pid, <<"vehicles">>, term_to_binary(Vehicle_id)) of
         {ok, Old_info} -> 
-            Request = riakc_obj:new(<<"vehicles">>, term_to_binary(Vehicle_id), term_to_binary([{{Lat, Long}, Timestamp}] ++ binary_to_term(riak_obj:get_value(Old_info))));
+            Request = riakc_obj:new(<<"vehicles">>, term_to_binary(Vehicle_id), term_to_binary([#{location => #{lat => Lat, long => Long}, timestamp => Timestamp}] ++ binary_to_term(riakc_obj:get_value(Old_info))));
         _ ->
-            Request = riak_obj:new(<<"vehicles">>, term_to_binary(Vehicle_id), term_to_binary([{{Lat, Long}, Timestamp}]))
+            Request = riakc_obj:new(<<"vehicles">>, term_to_binary(Vehicle_id), term_to_binary([#{location => #{lat => Lat, long => Long}, timestamp => Timestamp}]))
     end,
     {reply, riakc_pb_socket:put(Riak_pid, Request), Riak_pid};
 
 handle_call({store_facility_info, {Facility_id, City}}, _From, Riak_pid) ->    
-    Request = riakc_obj:new(<<"facilities">>, term_to_binary(Facility_id), term_to_binary(City)),
+    Request = riakc_obj:new(<<"facilities">>, term_to_binary(Facility_id), term_to_binary(#{city => City})),
     {reply, riakc_pb_socket:put(Riak_pid, Request), Riak_pid};
 
 % Get info functions
 handle_call({query_package_history, Package_id}, _from, Riak_pid) ->
     {reply, riakc_pb_socket:get(Riak_pid, <<"packages">>, term_to_binary(Package_id)), Riak_pid};
 
-handle_call({query_package_history, Vehicle_id}, _from, Riak_pid) ->
+handle_call({query_vehicle_history, Vehicle_id}, _from, Riak_pid) ->
     {reply, riakc_pb_socket:get(Riak_pid, <<"vehicles">>, term_to_binary(Vehicle_id)), Riak_pid};
 
 handle_call({query_facility, Facility_id}, _from, Riak_pid) ->
