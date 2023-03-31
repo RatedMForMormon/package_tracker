@@ -123,9 +123,9 @@ handle_call({store_package_info, {Package_id, Holder_id, Timestamp}}, _From, Ria
 handle_call({store_vehicle_info, {Vehicle_id, {Lat, Long}, Timestamp}}, _From, Riak_pid) ->
     case riakc_pb_socket:get(Riak_pid, <<"vehicles">>, term_to_binary(Vehicle_id)) of
         {ok, Old_info} -> 
-            Request = riakc_obj:new(<<"vehicles">>, term_to_binary(Vehicle_id), term_to_binary([#{location => #{lat => Lat, long => Long}, timestamp => Timestamp}] ++ binary_to_term(riak_obj:get_value(Old_info))));
+            Request = riakc_obj:new(<<"vehicles">>, term_to_binary(Vehicle_id), term_to_binary([#{location => #{lat => Lat, long => Long}, timestamp => Timestamp}] ++ binary_to_term(riakc_obj:get_value(Old_info))));
         _ ->
-            Request = riak_obj:new(<<"vehicles">>, term_to_binary(Vehicle_id), term_to_binary([#{location => #{lat => Lat, long => Long}, timestamp => Timestamp}]))
+            Request = riakc_obj:new(<<"vehicles">>, term_to_binary(Vehicle_id), term_to_binary([#{location => #{lat => Lat, long => Long}, timestamp => Timestamp}]))
     end,
     {reply, riakc_pb_socket:put(Riak_pid, Request), Riak_pid};
 
