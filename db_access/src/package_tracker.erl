@@ -130,7 +130,7 @@ handle_call({store_vehicle_info, {Vehicle_id, {Lat, Long}, Timestamp}}, _From, R
     {reply, riakc_pb_socket:put(Riak_pid, Request), Riak_pid};
 
 handle_call({store_facility_info, {Facility_id, City}}, _From, Riak_pid) ->    
-    Request = riakc_obj:new(<<"facilities">>, term_to_binary(Facility_id), term_to_binary(City)),
+    Request = riakc_obj:new(<<"facilities">>, term_to_binary(Facility_id), term_to_binary(#{city => City})),
     {reply, riakc_pb_socket:put(Riak_pid, Request), Riak_pid};
 
 % Get info functions
