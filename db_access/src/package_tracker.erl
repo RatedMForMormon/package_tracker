@@ -137,7 +137,7 @@ handle_call({store_facility_info, {Facility_id, City}}, _From, Riak_pid) ->
 handle_call({query_package_history, Package_id}, _from, Riak_pid) ->
     {reply, riakc_pb_socket:get(Riak_pid, <<"packages">>, term_to_binary(Package_id)), Riak_pid};
 
-handle_call({query_package_history, Vehicle_id}, _from, Riak_pid) ->
+handle_call({query_vehicle_history, Vehicle_id}, _from, Riak_pid) ->
     {reply, riakc_pb_socket:get(Riak_pid, <<"vehicles">>, term_to_binary(Vehicle_id)), Riak_pid};
 
 handle_call({query_facility, Facility_id}, _from, Riak_pid) ->
